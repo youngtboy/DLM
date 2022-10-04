@@ -12,3 +12,10 @@ The source code is available now.
 ### Evaluation Tools
 - You can use the following repository or the evaluation.py we provide to perform the evaluation.
     - https://github.com/lartpang/PySODMetrics
+
+### Models
+- You can get the model weight through the following link.
+    - Baidu Pan: <https://pan.baidu.com/s/1HZqRAYGf8uNZOQgFRanJ1Q> Password: dkja
+
+### Dataset
+
