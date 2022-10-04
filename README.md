@@ -6,7 +6,7 @@ You can download the saliency maps through the following link.
 The source code is available now.
 
 ### Available Source
-- You can access the Saliency Maps, Model Weights and Dataset through the following links
+- You can access the **Saliency Maps, Model Weights and Dataset** through the following links.
     - Baidu Pan: <https://pan.baidu.com/s/1HZqRAYGf8uNZOQgFRanJ1Q> Password: dkja
 
 ### Evaluation Tools
