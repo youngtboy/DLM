@@ -3,7 +3,7 @@
 ### News
 You can download the saliency maps through the following link.
 
-The source code will be coming.
+The source code is available now.
 
 ### Saliency maps
 - The saliency maps corresponding to our method are available:
