@@ -12,3 +12,11 @@ The source code is available now.
 ### Evaluation Tools
 - You can use the following repository to perform the evaluation.
     - https://github.com/lartpang/PySODMetrics
+
+## Method
+![](./assets/method.png)
+## Results
+![](./assets/main_results.png)
+![](./assets/other_results.png)
+![](./assets/main_visual_results.png)
+![](./assets/other_visual_results.png)
