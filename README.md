@@ -1,4 +1,4 @@
-[ACMMM 2022] Depth-inspired Label Mining for Unsupervised RGB-D Salient Object Detection
+## Depth-inspired Label Mining for Unsupervised RGB-D Salient Object Detection (DLM)
 
 ### News
 You can download the saliency maps through the following link.
@@ -15,8 +15,10 @@ The source code is available now.
 
 ## Method
 ![](./assets/method.png)
-## Results
+## Main Results
 ![](./assets/main_results.png)
 ![](./assets/other_results.png)
+
+## More Results
 ![](./assets/main_visual_results.png)
 ![](./assets/other_visual_results.png)
