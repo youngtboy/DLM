@@ -129,103 +129,103 @@ def main(args):
 
     ###################################################### training ##############################################################
 
-    # for epoch in range(0, args.update_freq):
-    #     dlg_model.train()
-    #     dlm_model.train()
-    #     mean_epoch_loss = torch.zeros(1).to(device)
-    #     train_loader = tqdm(train_loader)
-    #     recon_criterion = torch.nn.MSELoss()
-    #     rank_criterion = torch.nn.MarginRankingLoss(0.)
-    #     for step, data in enumerate(train_loader, start=0):
-    #         global_step = step + epoch * iter_per_epoch
-    #         images, depths, colored_depths, cdcp_labels = data
-    #         images, depths, colored_depths, cdcp_labels = images.cuda(), depths.cuda(), colored_depths.cuda(), cdcp_labels.cuda()
-    #         colored_depths = colored_depths.float().cuda()
-    #         colored_depths = einops.rearrange(colored_depths, 'b t c h w -> (b t) c h w')
-    #
-    #         adjust_lr_poly(dlm_optimizer, args.lr, global_step, total_iters)
-    #         adjust_lr_poly(dlg_optimizer, args.lr, global_step, total_iters)
-    #         dlm_optimizer.zero_grad()
-    #         dlg_optimizer.zero_grad()
-    #
-    #         recon_depth, _, masks, _ = dlg_model(colored_depths)
-    #
-    #         _depths = depths[:, None].repeat(1, 2, 1, 1, 1)
-    #         _depths = einops.rearrange(_depths, 'b t c h w -> (b t) c h w')[:, None].repeat(1, 2, 1, 1, 1)
-    #         r = (_depths * masks).mean([-1, -2])
-    #         r1 = r[:, 0].squeeze()
-    #         r2 = r[:, 1].squeeze()
-    #         y = torch.full((args.batch_size*2,), -1).cuda()
-    #         rank_loss = 5 * rank_criterion(r1, r2, y)
-    #
-    #         recon_loss = 100 * recon_criterion(colored_depths, recon_depth)
-    #         entropy_loss = 5 * -(masks * torch.log(masks + 1e-5)).sum(dim=1).mean()
-    #         masks = einops.rearrange(masks, '(b t) s c h w -> b t s c h w', t=2)
-    #
-    #         dlg_labels = masks[:, :, 0, 0]
-    #         dlg_labels = dlg_labels.mean(dim=1)[:, None].repeat(1, 3, 1, 1)
-    #         masks1 = masks[:, 0]
-    #         masks2 = masks[:, 1]
-    #         masks2 = einops.rearrange(masks2, 'b s c h w -> b c s h w')
-    #         temporal_diff = torch.pow((masks1 - masks2), 2).mean([-1, -2])
-    #         consistency_loss = 5 * temporal_diff.view(-1, 2*2).min(1)[0].mean()
-    #
-    #         dlg_loss = recon_loss + entropy_loss + consistency_loss + rank_loss
-    #
-    #         init_pre_label = (dlg_labels+cdcp_labels)/2
-    #         _depth_labels = dlg_labels.clone()
-    #         _cdcp_labels = cdcp_labels.clone()
-    #         _init_pre_label = init_pre_label.clone()
-    #
-    #         mask_pred, dlg_um, cdcp_um, pre_um = dlm_model(images, _depth_labels, _cdcp_labels, _init_pre_label)
-    #         dlg_labels[dlg_labels >= 0.5] = 1
-    #         dlg_labels[dlg_labels < 0.5] = 0
-    #         cdcp_labels[cdcp_labels >= 0.5] = 1
-    #         cdcp_labels[cdcp_labels < 0.5] = 0
-    #         init_pre_label[init_pre_label >= 0.5] = 1
-    #         init_pre_label[init_pre_label < 0.5] = 0
-    #         mask_pred= F.interpolate(mask_pred, size=images.shape[2:], mode="bilinear", align_corners=False)
-    #         dlg_um = F.interpolate(dlg_um, size=images.shape[2:], mode="bilinear", align_corners=False)
-    #         cdcp_um = F.interpolate(cdcp_um, size=images.shape[2:], mode="bilinear", align_corners=False)
-    #         pre_um = F.interpolate(pre_um, size=images.shape[2:], mode="bilinear", align_corners=False)
-    #
-    #         loss = _dlm_loss(mask_pred, dlg_labels, cdcp_labels, init_pre_label, dlg_um, cdcp_um, pre_um) + dlg_loss
-    #         loss.backward()
-    #         dlg_optimizer.step()
-    #         dlm_optimizer.step()
-    #         mean_epoch_loss = (mean_epoch_loss * step + loss.detach()) / (step + 1)
-    #         train_loader.desc = "[epoch {}] loss: {}".format(epoch, round(mean_epoch_loss.item(), 4))
-    #
-    # ###############################################################################################################################
-    #
-    # infos = {
-    #     "state_dict_sod": dlg_model.state_dict(),
-    #     "state_dict_gpl": dlm_model.state_dict()
-    # }
-    #
-    # # save weights
-    # weights_dir = os.path.join(args.save_weight, args.project_name)
-    # if not os.path.exists(weights_dir):
-    #     os.makedirs(weights_dir)
-    # torch.save(infos, os.path.join(weights_dir, "Epoch_{}".format(args.update_freq) + ".pth"))
-    #
-    # dlm_model.eval()
-    # with torch.no_grad():
-    #     for _ in tqdm(range(len(val_trainset)), desc="pre_label is generating"):
-    #         image, _, _, label, name = val_trainset.load_data()
-    #         size = label.size()
-    #         image = image.cuda()
-    #         pred = dlm_model(image, None, None, None)
-    #         pred = F.interpolate(
-    #             input=pred, size=size[-2:],
-    #             mode='bilinear', align_corners=False
-    #         )
-    #         pred = pred.sigmoid().cpu().numpy().squeeze()
-    #         pred = 255 * (pred - pred.min()) / (pred.max() - pred.min() + 1e-8)
-    #         crf_pred = crf_refine(cv2.imread(os.path.join(args.data_root, "Image/{}".format(name.split(".")[0] + ".jpg")), 1),
-    #                     pred.astype('uint8'))
-    #         cv2.imwrite(os.path.join(args.data_root, "NJUD_NLPR_DUT/Pre_GT/{}".format(name)), crf_pred)
-    #     val_trainset.index = 0
+    for epoch in range(0, args.update_freq):
+        dlg_model.train()
+        dlm_model.train()
+        mean_epoch_loss = torch.zeros(1).to(device)
+        train_loader = tqdm(train_loader)
+        recon_criterion = torch.nn.MSELoss()
+        rank_criterion = torch.nn.MarginRankingLoss(0.)
+        for step, data in enumerate(train_loader, start=0):
+            global_step = step + epoch * iter_per_epoch
+            images, depths, colored_depths, cdcp_labels = data
+            images, depths, colored_depths, cdcp_labels = images.cuda(), depths.cuda(), colored_depths.cuda(), cdcp_labels.cuda()
+            colored_depths = colored_depths.float().cuda()
+            colored_depths = einops.rearrange(colored_depths, 'b t c h w -> (b t) c h w')
+    
+            adjust_lr_poly(dlm_optimizer, args.lr, global_step, total_iters)
+            adjust_lr_poly(dlg_optimizer, args.lr, global_step, total_iters)
+            dlm_optimizer.zero_grad()
+            dlg_optimizer.zero_grad()
+    
+            recon_depth, _, masks, _ = dlg_model(colored_depths)
+    
+            _depths = depths[:, None].repeat(1, 2, 1, 1, 1)
+            _depths = einops.rearrange(_depths, 'b t c h w -> (b t) c h w')[:, None].repeat(1, 2, 1, 1, 1)
+            r = (_depths * masks).mean([-1, -2])
+            r1 = r[:, 0].squeeze()
+            r2 = r[:, 1].squeeze()
+            y = torch.full((args.batch_size*2,), -1).cuda()
+            rank_loss = 5 * rank_criterion(r1, r2, y)
+    
+            recon_loss = 100 * recon_criterion(colored_depths, recon_depth)
+            entropy_loss = 5 * -(masks * torch.log(masks + 1e-5)).sum(dim=1).mean()
+            masks = einops.rearrange(masks, '(b t) s c h w -> b t s c h w', t=2)
+    
+            dlg_labels = masks[:, :, 0, 0]
+            dlg_labels = dlg_labels.mean(dim=1)[:, None].repeat(1, 3, 1, 1)
+            masks1 = masks[:, 0]
+            masks2 = masks[:, 1]
+            masks2 = einops.rearrange(masks2, 'b s c h w -> b c s h w')
+            temporal_diff = torch.pow((masks1 - masks2), 2).mean([-1, -2])
+            consistency_loss = 5 * temporal_diff.view(-1, 2*2).min(1)[0].mean()
+    
+            dlg_loss = recon_loss + entropy_loss + consistency_loss + rank_loss
+    
+            init_pre_label = (dlg_labels+cdcp_labels)/2
+            _depth_labels = dlg_labels.clone()
+            _cdcp_labels = cdcp_labels.clone()
+            _init_pre_label = init_pre_label.clone()
+    
+            mask_pred, dlg_um, cdcp_um, pre_um = dlm_model(images, _depth_labels, _cdcp_labels, _init_pre_label)
+            dlg_labels[dlg_labels >= 0.5] = 1
+            dlg_labels[dlg_labels < 0.5] = 0
+            cdcp_labels[cdcp_labels >= 0.5] = 1
+            cdcp_labels[cdcp_labels < 0.5] = 0
+            init_pre_label[init_pre_label >= 0.5] = 1
+            init_pre_label[init_pre_label < 0.5] = 0
+            mask_pred= F.interpolate(mask_pred, size=images.shape[2:], mode="bilinear", align_corners=False)
+            dlg_um = F.interpolate(dlg_um, size=images.shape[2:], mode="bilinear", align_corners=False)
+            cdcp_um = F.interpolate(cdcp_um, size=images.shape[2:], mode="bilinear", align_corners=False)
+            pre_um = F.interpolate(pre_um, size=images.shape[2:], mode="bilinear", align_corners=False)
+    
+            loss = _dlm_loss(mask_pred, dlg_labels, cdcp_labels, init_pre_label, dlg_um, cdcp_um, pre_um) + dlg_loss
+            loss.backward()
+            dlg_optimizer.step()
+            dlm_optimizer.step()
+            mean_epoch_loss = (mean_epoch_loss * step + loss.detach()) / (step + 1)
+            train_loader.desc = "[epoch {}] loss: {}".format(epoch, round(mean_epoch_loss.item(), 4))
+    
+    ###############################################################################################################################
+    
+    infos = {
+        "state_dict_sod": dlg_model.state_dict(),
+        "state_dict_gpl": dlm_model.state_dict()
+    }
+    
+    # save weights
+    weights_dir = os.path.join(args.save_weight, args.project_name)
+    if not os.path.exists(weights_dir):
+        os.makedirs(weights_dir)
+    torch.save(infos, os.path.join(weights_dir, "Epoch_{}".format(args.update_freq) + ".pth"))
+    
+    dlm_model.eval()
+    with torch.no_grad():
+        for _ in tqdm(range(len(val_trainset)), desc="pre_label is generating"):
+            image, _, _, label, name = val_trainset.load_data()
+            size = label.size()
+            image = image.cuda()
+            pred = dlm_model(image, None, None, None)
+            pred = F.interpolate(
+                input=pred, size=size[-2:],
+                mode='bilinear', align_corners=False
+            )
+            pred = pred.sigmoid().cpu().numpy().squeeze()
+            pred = 255 * (pred - pred.min()) / (pred.max() - pred.min() + 1e-8)
+            crf_pred = crf_refine(cv2.imread(os.path.join(args.data_root, "Image/{}".format(name.split(".")[0] + ".jpg")), 1),
+                        pred.astype('uint8'))
+            cv2.imwrite(os.path.join(args.data_root, "NJUD_NLPR_DUT/Pre_GT/{}".format(name)), crf_pred)
+        val_trainset.index = 0
 
     ###############################################################################################################################
 
